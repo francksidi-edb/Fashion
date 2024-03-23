@@ -1,0 +1,14 @@
+transformers
+Pillow
+torch
+streamlit
+streamlit_webrtc
+sentence-transformers
+beautifulsoup4
+langchain
+psycopg2
+numpy
+psycopg2-binary
+SQLAlchemy
+cmake
+clang
