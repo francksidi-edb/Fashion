@@ -23,7 +23,6 @@ scikit-learn
 seaborn 
 matplotlib 
 sqlalchemy p
-lotly-express 
 sql_magic 
 wordcloud 
 langdetect
