@@ -105,5 +105,6 @@ postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images',
 
 Change the connection info inside. Run from the command line. Copy the logo.png image in the directory in which the python program is running.
 For instance look for : red shoes, red women shoes, black shoes....
+the application is inside code directory.
 
-%streamlit run app_search.py
+%streamlit run app_search_adv.py
