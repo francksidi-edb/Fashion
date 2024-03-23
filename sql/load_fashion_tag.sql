@@ -49,9 +49,11 @@ batch_size = batch
 image_count = 0
 total_image_processing_time = 0
 total_insertion_time = 0
+total_rows_inserted = 0
 for i in range(0, len(result), batch_size):
     batch_ids = [row['id'] for row in result[i:i+batch_size]]
     inputs, valid_paths = load_images_batch(batch_ids, base_path, processor, tag)
+    start_time = time.time()  # Record start time
     if inputs is not None:
         image_processing_start_time = time.time()
         outputs = model(**inputs)
@@ -62,7 +64,7 @@ for i in range(0, len(result), batch_size):
 
         # Assuming embeddings are processed as a batch; adapt as needed
         embeddings_list = embeddings.detach().cpu().tolist()
-
+    counter = 0
     for idx, embedding in enumerate(embeddings_list):
         row = result[i+idx]
         image_path = f"{base_path}/{row['id']}.jpg"
@@ -71,7 +73,10 @@ for i in range(0, len(result), batch_size):
         plan = plpy.prepare("insert into products_emb (id, gender, mastercategory, subcategory, articletype, basecolour, season, year, usage, productdisplayname, image_path, embedding) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)", ["integer", "text", "text", "text", "text", "text", "text", "integer", "text", "text", "text", "vector"])
         plpy.execute(plan, [row['id'], row['gender'], row['mastercategory'], row['subcategory'], row['articletype'], row['basecolour'], row['season'], row['year'], row['usage'], row['productdisplayname'], image_path, embedding])
         image_count += len(valid_paths) 
+        total_rows_inserted += 1
+    elapsed_time = time.time() - start_time
+    plpy.notice(f"Processed {batch} images in {elapsed_time} seconds. rows inserted {total_rows_inserted}")
 function_end_time = time.time()
 total_time = function_end_time - function_start_time
-plpy.notice(f"Total function execution time: {total_time} seconds. Model loading time: {model_loading_end - model_loading_start} seconds. Fetching time: {fetch_end - fetch_start} seconds.")
+plpy.notice(f"Total Rows: {total_rows_inserted} Total function execution time: {total_time} seconds. Model loading time: {model_loading_end - model_loading_start} seconds. Fetching time: {fetch_end - fetch_start} seconds.")
 $$ LANGUAGE plpython3u;
