@@ -15,6 +15,9 @@ Load the table products using copy command
 postgres=# copy products from 'stylesc.csv' header csv; 
 The table should contains 44,440 rows.
 
+Download and unzip the dataset from https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small/download?datasetVersionNumber=1
+for instance as /Users/francksidi/Downloads/archive/images
+
 
 ## Install all dependencies for transformers and validate that CLIP model is available
 
@@ -67,7 +70,27 @@ Install the functions inside DDL folder:
 
 1 - load_fashion_tag -- this function will read the products table and insert inside the new products_emb and add 2 columns embedding and image_path
 
+postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images','product', 32);
 
+NOTICE:  Processed 32 images in 1.172111988067627 seconds. rows inserted 32
+
+NOTICE:  Processed 32 images in 0.810783863067627 seconds. rows inserted 64
+
+NOTICE:  Processed 32 images in 0.8137722015380859 seconds. rows inserted 96
+
+NOTICE:  Processed 32 images in 0.9017457962036133 seconds. rows inserted 128
+
+NOTICE:  Processed 32 images in 0.8105340003967285 seconds. rows inserted 160
+
+NOTICE:  Processed 32 images in 0.8043057918548584 seconds. rows inserted 192
+...
+
+NOTICE:  Processed 32 images in 0.786837100982666 seconds. rows inserted 44411
+
+
+NOTICE:  Processed 32 images in 0.6174778938293457 seconds. rows inserted 44435
+
+NOTICE:  Total Rows: 44435 Total function execution time: 1283.9920008182526 seconds. Model loading time: 2.249537944793701 seconds. Fetching time: 0.05452418327331543 seconds.
 
 ## Generate Embedding 
 
@@ -78,10 +101,9 @@ postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images',
 
 
 
-
-## Similarity Search using Streamlit application enabling WebCAM and Text Search on Images. 
+## Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog. 
 
 Change the connection info inside. Run from the command line. Copy the logo.png image in the directory in which the python program is running.
-For instance look for images from a text description: old man, old lady, blond lady ,...
+For instance look for : red shoes, red women shoes, black shoes....
 
-%streamlit run streamlit_face_reco_text.py
+%streamlit run app_search.py
