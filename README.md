@@ -9,14 +9,12 @@ We are showing also text to image search, searching on catalog passing text as i
 
 ## Sample Dataset
 Load the dataset located inside the dataset folder using the following command command 
+Create the table products and products_emb inside ddl folder
+Load the table products using copy command
 
+postgres=# copy products from 'stylesc.csv' header csv; 
+The table should contains 44,440 rows.
 
-
-
-##CAUTIOUS: Please validate that there is no virus on the file. I did not check also all images in term of content. 
-
-Use the script distribute_images.sh to create a directory with up to 250 images. It should take few minutes and  create 811 directories. 
-This file is located inside Dataset folder
 
 ## Install all dependencies for transformers and validate that CLIP model is available
 
