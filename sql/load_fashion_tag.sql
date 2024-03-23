@@ -26,7 +26,7 @@ def load_images_batch(batch_ids, base_path, processor, tag):
     images, valid_paths = [], []
     for image_id in batch_ids:
         image_path = f"{base_path}/{image_id}.jpg"
-        plpy.notice(f"Attempting to load image: {image_path}")
+        #plpy.notice(f"Attempting to load image: {image_path}")
         try:
             img = Image.open(image_path)
             img.verify()  # Verify the image integrity
@@ -34,7 +34,7 @@ def load_images_batch(batch_ids, base_path, processor, tag):
             images.append(img)
             valid_paths.append(image_path)
         except OSError as e:
-            plpy.error(f"Failed to process image {image_path}: {e}")
+            plpy.notice(f"Failed to process image {image_path}: {e}")
             continue  # Skip problematic images
     if images:
         return processor(text=[tag] * len(images), images=images, return_tensors="pt", padding=True), valid_paths
@@ -66,7 +66,7 @@ for i in range(0, len(result), batch_size):
     for idx, embedding in enumerate(embeddings_list):
         row = result[i+idx]
         image_path = f"{base_path}/{row['id']}.jpg"
-        plpy.notice(f"Executing INSERT for ID {row['id']} with data: {row['id'], row['gender'], row['mastercategory'], row['subcategory'], row['articletype'], row['basecolour'], row['season'], row['year'], row['usage'], row['productdisplayname'], image_path, embedding}")
+        #plpy.notice(f"Executing INSERT for ID {row['id']} with data: {row['id'], row['gender'], row['mastercategory'], row['subcategory'], row['articletype'], row['basecolour'], row['season'], row['year'], row['usage'], row['productdisplayname'], image_path, embedding}")
         # Execute the prepared statement with the current rows data
         plan = plpy.prepare("insert into products_emb (id, gender, mastercategory, subcategory, articletype, basecolour, season, year, usage, productdisplayname, image_path, embedding) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)", ["integer", "text", "text", "text", "text", "text", "text", "integer", "text", "text", "text", "vector"])
         plpy.execute(plan, [row['id'], row['gender'], row['mastercategory'], row['subcategory'], row['articletype'], row['basecolour'], row['season'], row['year'], row['usage'], row['productdisplayname'], image_path, embedding])
