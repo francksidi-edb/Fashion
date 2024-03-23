@@ -40,99 +40,44 @@ After test that this program is working:
 
 %python test_clip.py
 
-## Create Table, install Pl_python3u functions
+## Create products_emb, install Pl_python3u functions
 
 Open psql and create the table 
 
-drop table if exists public.pictures;
+Drop table products_emb;
 
-CREATE TABLE IF NOT EXISTS public.pictures ( id serial, imagepath text, tag text, embeddings vector(512) ) TABLESPACE pg_default;
-
-
-Install the 3 functions inside DDL folder:
-
-1 - generate_embeddings_clip_bytea -- Generate embedding from Bytea (Used by the streamlit application to get the input image and return an embedding to search inside the database)
-
-2 - scan_specific_path_and_load -- Main function to generate embedding in batch and load data inside pictures table. 
-
-3 - process_images_and_store_embeddings_batch -- Function to load folder of images, take an input pattern and call scan_specific_path_and_load for each folder in which we have images
-
-
-
-
-## Load Data
-
-You can load images from a directory directly calling the pl-python function: process_images_and_store_embeddings_batch(source_dir text,tag text,batch integer)
-
-if you have images for instance on: /Users/francksidi/Downloads/celebrity/image_group_811
-
-postgres#= select process_images_and_store_embeddings_batch(' /Users/francksidi/Downloads/celebrity/image_group_811', 'person', 32);
-
-NOTICE:  Total processing time: 4.72 seconds
-NOTICE:  Total image processing time: 2.40 seconds
-NOTICE:  Total database insertion time: 0.03 seconds
-NOTICE:  Total number of images processed: 99
-process_images_and_store_embeddings_batch 
-99
-(1 row)
+CREATE TABLE products_emb (
+    Id integer,
+    gender VARCHAR(50),
+    masterCategory VARCHAR(100),
+    subCategory VARCHAR(100),
+    articleType VARCHAR(100),
+    baseColour VARCHAR(50),
+    Season text,
+    year INTEGER,
+    usage text null,
+    productDisplayName TEXT null,
+    Image_path text null, 
+    embedding vector(512)
+);
 
 
-## Load All Data
 
-You can load all data using the pl-python function from psql. we load in multiple phases as we did not create autonomous transactions.
+Install the functions inside DDL folder:
 
-postgres#= SET work_mem = '512MB';
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_1*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_2*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_3*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_4*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_5*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_6*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_7*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_8*','person',32);
-
-select public.scan_specific_path_and_load('/Users/francksidi/Downloads/celebrity/image_group_9*','person',32);
-
-## Similarity Search using sample python program
-
-Change the connection info inside search.py
-
-% python search.py '/users/francksidi/downloads/profile.jpg'
-
-Fetching vector took 3.3727 seconds.
-
-Querying similar images took 0.8264 seconds.
-
-ID: 394872, ImagePath: /Users/francksidi/Downloads/celebrity/image_group_494/123370.jpg, Similarity: 0.38990872249157593
-
-ID: 440568, ImagePath: /Users/francksidi/Downloads/celebrity/image_group_64/015999.jpg, Similarity: 0.3897554537178016
-
-ID: 435829, ImagePath: /Users/francksidi/Downloads/celebrity/image_group_589/147039.jpg, Similarity: 0.35878975781406686
-
-ID: 396142, ImagePath: /Users/francksidi/Downloads/celebrity/image_group_405/101064.jpg, Similarity: 0.35226602687072894
-
-ID: 412995, ImagePath: /Users/francksidi/Downloads/celebrity/image_group_538/134483.jpg, Similarity: 0.34490723691677183
+1 - load_fashion_tag -- this function will read the products table and insert inside the new products_emb and add 2 columns embedding and image_path
 
 
-Now Create index on the table to speed up the search: 
 
-The search is now moving from 0.8 sec to 0.08 sec. 
+## Generate Embedding 
+
+from psql 
+run the following with the path as final path where you unzip all images
+
+postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images','product', 32);
 
 
-## Similarity Search using Streamlit application enabling WebCAM
 
-Change the connection info inside streamlit_face_reco.py
-Run from the command line. Copy the logo.png image in the directory in which the python program is running.
-
-%streamlit run streamlit_face_reco.py
 
 ## Similarity Search using Streamlit application enabling WebCAM and Text Search on Images. 
 
