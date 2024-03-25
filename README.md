@@ -46,8 +46,8 @@ After test that this program is working:
 ## Create products_emb, install Pl_python3u functions
 
 Open psql and create the table 
-
-Drop table products_emb;
+```
+drop table products_emb;
 
 CREATE TABLE products_emb (
     Id integer,
@@ -63,13 +63,14 @@ CREATE TABLE products_emb (
     Image_path text null, 
     embedding vector(512)
 );
-
+```
 
 
 Install the functions inside DDL folder:
 
 1 - load_fashion_tag -- this function will read the products table and insert inside the new products_emb and add 2 columns embedding and image_path
 
+```
 postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images','product', 32);
 
 NOTICE:  Processed 32 images in 1.172111988067627 seconds. rows inserted 32
@@ -91,14 +92,15 @@ NOTICE:  Processed 32 images in 0.786837100982666 seconds. rows inserted 44411
 NOTICE:  Processed 32 images in 0.6174778938293457 seconds. rows inserted 44435
 
 NOTICE:  Total Rows: 44435 Total function execution time: 1283.9920008182526 seconds. Model loading time: 2.249537944793701 seconds. Fetching time: 0.05452418327331543 seconds.
+```
 
 ## Generate Embedding 
 
 from psql 
 run the following with the path as final path where you unzip all images
-
+```
 postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images','product', 32);
-
+```
 
 
 ## Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog. 
@@ -106,5 +108,6 @@ postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images',
 Change the connection info inside. Run from the command line. Copy the logo.png image in the directory in which the python program is running.
 For instance look for : red shoes, red women shoes, black shoes....
 the application is inside code directory.
-
+```
 %streamlit run app_search_adv.py
+```
