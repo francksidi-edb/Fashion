@@ -6,7 +6,8 @@ import numpy as np
 import io
 import time
 from sqlalchemy import create_engine, text
-
+from transformers import CLIPProcessor, CLIPModel
+import torch
 
 # Streamlit page configuration
 st.set_page_config(layout="wide", page_title="Catalog Search")
@@ -41,7 +42,7 @@ primary_color = "#FFFFFF"  # Example primary color for the text
 hover_background_color = "#FFFFFF"  # Example hover background color for links
 
 # Insert the logo and navigation bar
-logo_path = "/Users/francksidi/Downloads/catalog/logo.svg"  # Update this path to your logo
+logo_path = "code/edb_new.png"  # Update this path to your logo
 
 st.markdown(header_css.format(background_color=background_color, 
                                primary_color=primary_color, 
@@ -65,24 +66,26 @@ with col2:
 
 # Title and introduction for the catalog search
 st.title('Catalog Search')
-st.markdown("## Powered by EDB Postgresql and Pgvector")
+st.markdown("## Powered by EDB Postgresql and PGAI")
 
-# Function to create database connection
+# Database Connection
 def create_db_connection():
+    """Create and return a database connection."""
     return psycopg2.connect(
         dbname="postgres",
         user="postgres",
-        password="password",  # Consider using environment variables for credentials
-        host="localhost"
+        password="password",
+        host="localhost",
+        port = 15432
     )
 
 # Database connection details
-DATABASE_URL = "postgresql://postgres:password@localhost:5432/postgres"
+DATABASE_URL = "postgresql://postgres:password@localhost:15432/postgres"
 engine = create_engine(DATABASE_URL)
 
 @st.cache_data
 def get_categories():
-    query = text("SELECT DISTINCT masterCategory FROM products_emb;")
+    query = text("SELECT DISTINCT masterCategory FROM products;")
     with engine.connect() as connection:
         result = connection.execute(query)
         # Fetch the result set as a list of dictionaries for easier access
@@ -91,15 +94,45 @@ def get_categories():
 
 @st.cache_data
 def get_products_by_category(category):
-    query = text("SELECT productDisplayName, image_path FROM products_emb WHERE masterCategory = :category limit 30;")
+    query = text("SELECT productDisplayName, img_id FROM products WHERE masterCategory = :category limit 30;")
     with engine.connect() as connection:
         result = connection.execute(query, {'category': category})
         # Convert the result to a list of dictionaries
-        products = [{'name': row['productdisplayname'], 'image_path': row['image_path']} for row in result.mappings().all()]
+        products = [{'name': row['productdisplayname'], 'image_path': f'dataset/images/{row["img_id"]}.jpg'} for row in result.mappings().all()]
     return products
 
+@st.cache_data
+def get_product_details_in_category(img_id):
+    """
+    Fetch product details for a given category by image ID.
 
-# Example usage of the above functions could be added here...
+    Args:
+        img_id (str): The image ID to search for in the database.
+
+    Returns:
+        dict: A dictionary containing product name and image path.
+    """
+    
+    query = text("SELECT productDisplayName, img_id FROM products WHERE img_id = :img_id;")
+    with engine.connect() as connection:
+        result = connection.execute(query, {'img_id': img_id})
+        # Convert the result to a list of dictionaries
+        product = result.mappings().first()
+        if product:
+            product_details = {
+                'name': product['productdisplayname'],
+                'image_path': f'dataset/images/{product["img_id"]}.jpg'
+            }
+        else:
+            product_details = None
+    return product_details
+
+@staticmethod
+def embedding_to_string(embedding: np.array) -> str:
+    return "[{}]".format(", ".join(str(x) for x in embedding))
+
+def embedding_to_list(embedding):
+    return embedding.squeeze().tolist()
 
 def search_catalog(text_query):
     conn = st.session_state.db_conn
@@ -107,38 +140,24 @@ def search_catalog(text_query):
 
     try:
         start_time = time.time()
-        cur.execute("SELECT public.generate_embeddings_clip_text(%s)::vector;", (text_query,))
-        vector_result = cur.fetchone()[0]
-        vector_time = time.time() - start_time
-        st.write(f"Fetching vector took {vector_time:.4f} seconds.")
-
-        start_time = time.time()
-        query = """
-        SELECT id, productDisplayname, image_path, 1 - (embedding <=> %s) as similarity
-        FROM products_emb
-        ORDER BY (embedding <=> %s)
-        LIMIT 20;
-        """
-# Note the removal of single quotes around the second placeholder and passing vector_result for both placeholders.
-        cur.execute(query, (vector_result, vector_result))
+        cur.execute(f"""SELECT data from pgai.retrieve('{text_query}', 2, 'img_embeddings');""")
 
         results = cur.fetchall()
-
-        query_filled = cur.mogrify(query, (vector_result, vector_result)).decode('utf-8')
-        print(query_filled)
+        
+        query_results = [result[0] for result in results]
 
         query_time = time.time() - start_time
         st.write(f"Querying similar catalog took {query_time:.4f} seconds.")
 
-        if results is not None:
-          st.write(f"Number of elements retrieved: {len(results)}")
-          for result in results:
-            id, productDisplayname, image_path = result
-            st.write(f"**{productDisplayname}**")
-            image = Image.open(image_path)
+        if query_results:
+          st.write(f"Number of elements retrieved: {len(query_results)}")
+          for result in query_results:
+            product = get_product_details_in_category(result)
+            st.write(f"**{product['name']}**")
+            image = Image.open(product['image_path'])
             st.image(image,width=150)
         else:
-          print("No results found.")
+          st.write("No results found.")
 
     except Exception as e:
         st.error("An error occurred: " + str(e))

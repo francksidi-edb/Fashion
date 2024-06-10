@@ -22,7 +22,9 @@ pandas
 scikit-learn 
 seaborn 
 matplotlib 
-sqlalchemy p
+sqlalchemy
 sql_magic 
 wordcloud 
 langdetect
+opencv-python
+pgvector

@@ -6,9 +6,11 @@ import numpy as np
 import io
 import time
 from sqlalchemy import create_engine, text
+import torch
+from transformers import CLIPModel, CLIPProcessor
 
 # Custom Header Section
-logo_path = "logo.svg"
+logo_path = "code/logo.svg" 
 primary_color = "#FF4B33"
 background_color = "#FFFFFF"
 
@@ -53,32 +55,59 @@ def create_db_connection():
     return psycopg2.connect(
         dbname="postgres",
         user="postgres",
-        password="admin",
-        host="localhost"
+        password="password",
+        host="localhost",
+        port=15432
     )
 
 
 # Database connection details
-DATABASE_URL = "postgresql://postgres:admin@localhost:5432/postgres"
+DATABASE_URL = "postgresql://postgres:password@localhost:15432/postgres"
 engine = create_engine(DATABASE_URL)
 
 @st.cache_data
 def get_categories():
-    query = text("SELECT DISTINCT subCategory FROM products_emb order by 1;")
+    query = text("SELECT DISTINCT masterCategory FROM products_emb order by 1;")
     with engine.connect() as connection:
         result = connection.execute(query)
         # Fetch the result set as a list of dictionaries for easier access
-        categories = [row['subcategory'] for row in result.mappings().all()]
+        categories = [row['mastercategory'] for row in result.mappings().all()]
     return categories
 
 @st.cache_data
 def get_products_by_category(category):
-    query = text("SELECT productDisplayName, image_path FROM products_emb WHERE subCategory = :category order by 1 limit 30;")
+    query = text("SELECT productDisplayName, image_path FROM products_emb WHERE masterCategory = :category order by 1 limit 30;")
     with engine.connect() as connection:
         result = connection.execute(query, {'category': category})
         # Convert the result to a list of dictionaries
         products = [{'name': row['productdisplayname'], 'image_path': row['image_path']} for row in result.mappings().all()]
     return products
+
+@st.cache_data
+def get_embeddings(text_query):
+    query = text("SELECT public.generate_embeddings_clip_text(:text_query);")
+    with engine.connect() as connection:
+        vector_result = connection.execute(query, {'text_query': text_query})
+        data = [{'embedding':row['generate_embeddings_clip_text']} for row in vector_result.mappings().all()]
+        
+        # If you expect a single embedding or a single row, extract it
+        if data:
+            # If there's only one row, return the first row's data
+            return data[0]
+        
+    return None
+
+@st.cache_data
+def get_similarity_results(vector_result):
+    
+    query = text("SELECT id, productDisplayname, image_path FROM products_emb ORDER BY (embedding <=> :vector_result) LIMIT 2;")
+    if isinstance(vector_result, list):  # If it's a list, format it as a string that PostgreSQL understands
+        vector_result = "[" + ",".join(map(str, vector_result)) + "]"
+
+    with engine.connect() as connection:
+        result = connection.execute(query, {'vector_result': vector_result})
+        data = [{'id':row['id'], 'name':row['productdisplayname'], 'image_path':row['image_path']} for row in result.mappings().all()]
+    return data
 
 def search_catalog(text_query):
     conn = st.session_state.db_conn
@@ -86,38 +115,25 @@ def search_catalog(text_query):
 
     try:
         start_time = time.time()
-        cur.execute("SELECT public.generate_embeddings_clip_text(%s)::vector;", (text_query,))
-        vector_result = cur.fetchone()[0]
+        vector_result = get_embeddings(text_query)["embedding"]
+    
         vector_time = time.time() - start_time
         st.write(f"Fetching vector took {vector_time:.4f} seconds.")
 
         start_time = time.time()
-        query = """
-        SELECT id, productDisplayname, image_path, 1 - (embedding <=> %s) as similarity
-        FROM products_emb 
-        ORDER BY (embedding <=> %s)
-        LIMIT 20;
-        """
-# Note the removal of single quotes around the second placeholder and passing vector_result for both placeholders.
-        cur.execute(query, (vector_result, vector_result))
-
-        results = cur.fetchall()
-
-        query_filled = cur.mogrify(query, (vector_result, vector_result)).decode('utf-8')
-        print(query_filled)
-
+        
+        results = get_similarity_results(vector_result)
         query_time = time.time() - start_time
         st.write(f"Querying similar catalog took {query_time:.4f} seconds.")
 
         if results is not None:
           st.write(f"Number of elements retrieved: {len(results)}")
           for result in results:
-            id, productDisplayname, image_path, similarity = result
-            st.write(f"**{productDisplayname}**")
-            image = Image.open(image_path)
+            st.write(f"**{result['name']}**")
+            image = Image.open(result['image_path'])
             st.image(image,width=150)
         else:
-          print("No results found.") 
+          st.write("No results found.")
 
     except Exception as e:
         st.error("An error occurred: " + str(e))
@@ -126,7 +142,6 @@ def search_catalog(text_query):
 
 if 'db_conn' not in st.session_state or st.session_state.db_conn.closed:
     st.session_state.db_conn = create_db_connection()
-
 
 
 # Using columns to create a two-part layout
@@ -203,7 +218,7 @@ with right_column:
                 SELECT id, productDisplayname, image_path, 1 - (embedding <=> %s) as similarity
                 FROM products_emb 
                 ORDER BY similarity DESC
-                LIMIT 20;
+                LIMIT 2;
                 """
                 cur.execute(query, (vector_result,))
                 results = cur.fetchall()
