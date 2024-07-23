@@ -1,7 +1,5 @@
 import argparse
 import psycopg2
-from PIL import Image
-import pandas as pd
 import time
 
 
@@ -56,7 +54,6 @@ def create_and_refresh_retriever(conn, s3_bucket_name):
 
 def load_data_to_db(conn, file_path):
     """Load data from CSV file to the database."""
-    # Changes for Bilge: Using context manager for file handling and cursor
     with open(file_path, 'r') as f:
         next(f)  # Skip the header row
         with conn.cursor() as cur:

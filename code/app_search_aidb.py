@@ -232,28 +232,29 @@ with right_column:
                 conn = st.session_state.db_conn
                 cur = conn.cursor()
                 
-                cur.execute(
-                f"""SELECT data from 
-                aidb.retrieve_via_s3('img_embeddings', 2, 'bilge-ince-test', '{image_name}', '');"""
-                )
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f"""SELECT data from 
+                        aidb.retrieve_via_s3('img_embeddings', 2, 'bilge-ince-test', '{image_name}', '');"""
+                    )
 
-                results = cur.fetchall()
-                query_results = [result[0] for result in results]
-                vector_time = time.time() - start_time
-                st.write(f"Fetching vector took {vector_time:.4f} seconds.")
+                    results = cur.fetchall()
+                    query_results = [result[0] for result in results]
+                    vector_time = time.time() - start_time
+                    st.write(f"Fetching vector took {vector_time:.4f} seconds.")
                 
-                if query_results:
-                    st.write(f"Found {len(query_results)} similar items.")
-                    for result in query_results:
-                        img_id = eval(result)["img_id"]
+                    if query_results:
+                        st.write(f"Found {len(query_results)} similar items.")
+                        for result in query_results:
+                            img_id = eval(result)["img_id"]
 
-                        product = get_product_details_in_category(img_id)
-                        st.write(f"**{product['name']}**")
-                        image = Image.open(product["image_path"])
-                        st.image(image, width=150)
-                else:
-                    st.write("No similar items found.")
+                            product = get_product_details_in_category(img_id)
+                            st.write(f"**{product['name']}**")
+                            image = Image.open(product["image_path"])
+                            st.image(image, width=150)
+                    else:
+                        st.write("No similar items found.")
             except Exception as e:
                 st.error(f"An error occurred: {e}")
             finally:
-                cur.close()
+                cur.close()  # Ensure cursor is closed properly
