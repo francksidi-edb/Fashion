@@ -1,5 +1,8 @@
-# Catalog Search
-Catalog Using Postgresql &amp; PGvector
+# Recommendation Engine
+
+The primary objectives of this recommendation engine are twofold. Firstly, it aims to develop an experimental recommendation engine utilizing the `pgvector` extension and `PL/Python`. Secondly, it seeks to construct the same engine using the `aidb` extension, with the intent of demonstrating the extension's ease of implementation and its capability to abstract complexities without compromising functionality.
+
+## Catalog Using Postgresql &amp; PGvector
 
 The objective of this experiment is to leverage the CLIP model in conjunction with PostgreSQL, employing the pgvector extension and PL/Python to execute transformation functions directly within the database for efficient searching. This setup involves a dataset of 44k Images of catalog. 
 
@@ -8,27 +11,21 @@ Instead of storing the images directly in the database, we store only their full
 We are showing also text to image search, searching on catalog passing text as input. 
 
 ## Sample Dataset
-Load the dataset located inside the dataset folder using the following command command 
-Create the table products and products_emb inside ddl folder
-Load the table products using copy command
-
-postgres=# copy products from 'stylesc.csv' header csv; 
-The table should contains 44,440 rows.
-
 Download and unzip the dataset from https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small/download?datasetVersionNumber=1
-for instance as /Users/francksidi/Downloads/archive/images
+into a folder like following `dataset/images`
 
-
-## Install all dependencies for transformers and validate that CLIP model is available
+### Install all dependencies for transformers and validate that CLIP model is available
 
 Postgresql 16 installed.
 
+#### If aidb will be used;
+
+aidb extension is installed. If not installed please install it by following the step by step installation guide: https://www.enterprisedb.com/docs/edb-postgres-ai/ai-ml/install-tech-preview/
+
+#### If aidb won't be used but pgvector and PL/Python will be used;
+
 EDB Language pack installed.
-
-Run pip install from EDB Python directory as: /Library/edb/languagepack/v4/Python-3.11/bin/pip install -r requirements.txt
-
 Install pgvector 0.6 extension from https://github.com/pgvector/pgvector
-
 Validate that pl-python3u is working well 
 
 run select public.test_plpython() inside the database;
@@ -38,12 +35,35 @@ postgres=# select public.test_plpython();
  PL/Python is working!
 (1 row)
 
+#### After above installations install requirements;
+
+Run pip install from EDB Python directory as: `pip install -r requirements.txt`
+
+
 Python Environment: The Python environment accessible to PostgreSQL should have the necessary libraries installed: 
-After test that this program is working: 
 
-%python test_clip.py
+## Run
+### Run with aidb extension
+Initially run connect_encode.py file to install aidb extension, create and refresh retriever to collect and generate embeddings from image datas in an S3 bucket.
+The images should be stored into that S3 bucket to run the python script. Then you should pass the name of the S3 bucket name as an argument like in below;
 
-## Create products_emb, install Pl_python3u functions
+```
+%python code/connect_encode.py s3-bucket-name
+```
+
+### Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog. 
+
+Change the db connection with the necessary port, username, password from `create_db_connection` function and `DATABASE_URL` variable. 
+
+To run with aidb use the below code
+```
+%streamlit run code/app_search_aidb.py
+```
+Example search texts : red shoes, red women shoes, black shoes....
+
+### Run without aidb (pgvector and PL/Python only)
+
+#### Create products_emb, install Pl_python3u functions
 
 Open psql and create the table 
 ```
@@ -94,7 +114,7 @@ NOTICE:  Processed 32 images in 0.6174778938293457 seconds. rows inserted 44435
 NOTICE:  Total Rows: 44435 Total function execution time: 1283.9920008182526 seconds. Model loading time: 2.249537944793701 seconds. Fetching time: 0.05452418327331543 seconds.
 ```
 
-## Generate Embedding 
+### Generate Embedding 
 
 from psql 
 run the following with the path as final path where you unzip all images
@@ -103,7 +123,7 @@ postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images',
 ```
 
 
-## Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog. 
+### Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog. 
 
 Change the connection info inside. Run from the command line. Copy the logo.png image in the directory in which the python program is running.
 For instance look for : red shoes, red women shoes, black shoes....
@@ -112,7 +132,7 @@ the application is inside code directory.
 %streamlit run app_search_adv.py
 ```
 
-## Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog and Search on Similar Images
+### Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog and Search on Similar Images
 
 Change the connection info inside. Run from the command line. Copy the logo.png image in the directory in which the python program is running.
 For instance look for : red shoes, red women shoes, black shoes....
