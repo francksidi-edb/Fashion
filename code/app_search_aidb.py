@@ -1,8 +1,6 @@
 import streamlit as st
 import psycopg2
 from PIL import Image
-import cv2
-import numpy as np
 import io
 import time
 from sqlalchemy import create_engine, text
