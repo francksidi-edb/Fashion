@@ -58,6 +58,7 @@ def load_data_to_db(conn, file_path):
         next(f)  # Skip the header row
         with conn.cursor() as cur:
             cur.copy_expert("COPY products FROM STDIN WITH CSV HEADER", f)
+    f.close()
 
 
 def main():
@@ -68,11 +69,12 @@ def main():
         try:
                 conn = _create_db_connection()
                 conn.autocommit = True  # Enable autocommit for creating the database
-
+                start_time = time.time()
                 initialize_database(conn)
                 create_and_refresh_retriever(conn, args.s3_bucket_name)
                 load_data_to_db(conn, 'dataset/stylesc.csv')
-
+                vector_time = time.time() - start_time
+                print(f"Total process time: {vector_time:.4f} seconds.")
         except (Exception, psycopg2.DatabaseError) as error:
                 print(f"Error: {error}")
         finally:
