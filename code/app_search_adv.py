@@ -41,7 +41,7 @@ primary_color = "#FFFFFF"  # Example primary color for the text
 hover_background_color = "#FFFFFF"  # Example hover background color for links
 
 # Insert the logo and navigation bar
-logo_path = "/Users/francksidi/Downloads/catalog/logo.svg"  # Update this path to your logo
+logo_path = "code/logo.svg"  # Update this path to your logo
 
 st.markdown(header_css.format(background_color=background_color, 
                                primary_color=primary_color, 

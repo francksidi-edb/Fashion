@@ -91,7 +91,7 @@ def main():
     conn = _create_db_connection()
     conn.autocommit = True  # Enable autocommit for creating the database
     cursor = conn.cursor()
-    cursor.execute("create extension IF NOT EXISTS pgai cascade;")
+    cursor.execute("create extension IF NOT EXISTS vector cascade;")
     cursor.execute("""CREATE TABLE IF NOT EXISTS products(
         Id integer,
         gender VARCHAR(50),
@@ -122,7 +122,7 @@ def main():
         next(f)  # Skip the header row
         with conn.cursor() as cur:
             cur.copy_expert("COPY products FROM STDIN WITH CSV HEADER", f)
-
+    # This will do the same for pgvector use case
     load_fashion_tag('dataset/images', 'product', 25, conn)
     conn.close()
     vector_time = time.time() - start_time

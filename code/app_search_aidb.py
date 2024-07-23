@@ -49,7 +49,7 @@ with col2:
     )
 
 # Streamlit UI for Image Similarity Search
-st.title("Catalog Search")
+st.title("Recommendation Engine")
 st.markdown("## Powered by EDB Postgres and PGAI")
 
 
@@ -128,10 +128,6 @@ def get_product_details_in_category(img_id):
     return product_details
 
 
-def embedding_to_list(embedding):
-    return embedding.squeeze().tolist()
-
-
 def search_catalog(text_query):
     conn = st.session_state.db_conn
     cur = conn.cursor()
@@ -139,7 +135,7 @@ def search_catalog(text_query):
     try:
         start_time = time.time()
         cur.execute(
-            f"""SELECT data from pgai.retrieve('{text_query}', 2, 'img_embeddings');"""
+            f"""SELECT data from aidb.retrieve('{text_query}', 2, 'img_embeddings');"""
         )
         results = cur.fetchall()
         query_results = [result[0] for result in results]
@@ -237,11 +233,15 @@ with right_column:
                 cur = conn.cursor()
                 
                 cur.execute(
-                f"""SELECT data from pgai.retrieve_via_s3('img_embeddings', 2, 'bilge-ince-test', '{image_name}', '');"""
-                )    
+                f"""SELECT data from 
+                aidb.retrieve_via_s3('img_embeddings', 2, 'bilge-ince-test', '{image_name}', '');"""
+                )
+
                 results = cur.fetchall()
                 query_results = [result[0] for result in results]
-
+                vector_time = time.time() - start_time
+                st.write(f"Fetching vector took {vector_time:.4f} seconds.")
+                
                 if query_results:
                     st.write(f"Found {len(query_results)} similar items.")
                     for result in query_results:

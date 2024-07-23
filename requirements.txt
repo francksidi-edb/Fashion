@@ -1,4 +1,5 @@
 transformers
+torchvision
 Pillow
 torch
 streamlit

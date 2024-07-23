@@ -25,10 +25,10 @@ def main():
 
         
         cursor = conn.cursor()
-        cursor.execute("create extension IF NOT EXISTS pgai cascade;")
+        cursor.execute("create extension IF NOT EXISTS aidb cascade;")
         cursor.close()
         with conn.cursor() as cur:
-                
+                cur.execute("drop table if exists products;")
                 cur.execute("""CREATE TABLE IF NOT EXISTS products(
                 img_id TEXT,
                 gender VARCHAR(50),
@@ -42,16 +42,17 @@ def main():
                 productDisplayName TEXT null
                 );""")
                 start_time = time.time()
+                # This query will go and fetch images from s3 bucket
                 cur.execute(f"""
-                        SELECT pgai.create_s3_retriever(
+                        SELECT aidb.create_s3_retriever(
                         'img_embeddings',
-                        'public',
+                        'public', 
                         'clip-vit-base-patch32',
                         'img',
                         '{args.s3_bucket_name}',
                         '');""")
                 cur.execute("""
-                        SELECT pgai.refresh_retriever('img_embeddings');""")
+                        SELECT aidb.refresh_retriever('img_embeddings');""")
                 cur.close
                 vector_time = time.time() - start_time
                 print(f"Creating and refreshing retriever took {vector_time:.4f} seconds.")
