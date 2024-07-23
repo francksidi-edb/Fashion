@@ -71,7 +71,7 @@ Install the functions inside DDL folder:
 1 - load_fashion_tag -- this function will read the products table and insert inside the new products_emb and add 2 columns embedding and image_path
 
 ```
-postgres=# select load_fashion_tag('/Users/francksidi/Downloads/archive/images','product', 32);
+postgres=# select load_fashion_tag('dataset/images','product', 32);
 
 NOTICE:  Processed 32 images in 1.172111988067627 seconds. rows inserted 32
 

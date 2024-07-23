@@ -41,7 +41,7 @@ primary_color = "#FFFFFF"  # Example primary color for the text
 hover_background_color = "#FFFFFF"  # Example hover background color for links
 
 # Insert the logo and navigation bar
-logo_path = "/Users/francksidi/Downloads/catalog/logo.svg"  # Update this path to your logo
+logo_path = "code/logo.svg"  # Update this path to your logo
 
 st.markdown(header_css.format(background_color=background_color, 
                                primary_color=primary_color, 
@@ -72,12 +72,12 @@ def create_db_connection():
     return psycopg2.connect(
         dbname="postgres",
         user="postgres",
-        password="admin",  # Consider using environment variables for credentials
+        password="password",  # Consider using environment variables for credentials
         host="localhost"
     )
 
 # Database connection details
-DATABASE_URL = "postgresql://postgres:admin@localhost:5432/postgres"
+DATABASE_URL = "postgresql://postgres:password@localhost:5432/postgres"
 engine = create_engine(DATABASE_URL)
 
 @st.cache_data
@@ -133,7 +133,7 @@ def search_catalog(text_query):
         if results is not None:
           st.write(f"Number of elements retrieved: {len(results)}")
           for result in results:
-            id, productDisplayname, image_path, similarity = result
+            id, productDisplayname, image_path = result
             st.write(f"**{productDisplayname}**")
             image = Image.open(image_path)
             st.image(image,width=150)
