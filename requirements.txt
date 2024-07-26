@@ -29,3 +29,4 @@ wordcloud
 langdetect
 opencv-python
 pgvector
+griptape @ git+https://github.com/griptape-ai/griptape@cjkindel/aidb
