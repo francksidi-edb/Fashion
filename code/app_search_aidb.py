@@ -1,5 +1,6 @@
 import streamlit as st
 import psycopg2
+import argparse
 from PIL import Image
 import io
 import time
@@ -65,6 +66,14 @@ def create_db_connection():
 DATABASE_URL = "postgresql://postgres:password@localhost:15432/postgres"
 engine = create_engine(DATABASE_URL)
 
+def load_data_to_db(conn, file_path):
+    """Load data from CSV file to the database."""
+    with open(file_path, 'r') as f:
+        next(f)  # Skip the header row
+        with conn.cursor() as cur:
+            cur.copy_expert("COPY products FROM STDIN WITH CSV HEADER", f)
+    f.close()
+    conn.commit()
 
 @st.cache_data
 def get_categories():
@@ -112,7 +121,6 @@ def get_product_details_in_category(img_id):
 
     with engine.connect() as connection:
         result = connection.execute(query, {"img_id": img_id})
-
         # Convert  result to a list of dictionaries
         product = result.mappings().first()
 
@@ -133,7 +141,7 @@ def search_catalog(text_query):
     try:
         start_time = time.time()
         cur.execute(
-            f"""SELECT data from aidb.retrieve('{text_query}', 2, 'img_embeddings');"""
+            f"""SELECT data from aidb.retrieve('{text_query}', 5, '{st.session_state.retriever_name}');"""
         )
         results = cur.fetchall()
         query_results = [result[0] for result in results]
@@ -156,10 +164,18 @@ def search_catalog(text_query):
         cur.close()
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("retriever_name", help="enter your retriever name", type=str)
+parser.add_argument("s3_bucket_name", help="enter your s3 bucket name", type=str)
+parser.add_argument("s3_endpoint", help="enter your s3 endpoint enter '' if your bucket is not public", type=str, default='')
+args = parser.parse_args()
+st.session_state.retriever_name = args.retriever_name
+st.session_state.s3_bucket_name = args.s3_bucket_name
+st.session_state.s3_endpoint = args.s3_endpoint
 if "db_conn" not in st.session_state or st.session_state.db_conn.closed:
     st.session_state.db_conn = create_db_connection()
-
-
+# Load the text information data about products into db.
+load_data_to_db(st.session_state.db_conn, 'dataset/stylesc.csv')
 # Using columns to create a two-part layout
 left_column, right_column = st.columns([1, 1])  # Adjust the ratio as needed
 
@@ -233,7 +249,7 @@ with right_column:
                 with conn.cursor() as cur:
                     cur.execute(
                         f"""SELECT data from 
-                        aidb.retrieve_via_s3('img_embeddings', 2, 'bilge-ince-test', '{image_name}', '');"""
+                        aidb.retrieve_via_s3('{st.session_state.retriever_name}', 5, '{st.session_state.s3_bucket_name}', '{image_name}', '{st.session_state.s3_endpoint}');"""
                     )
 
                     results = cur.fetchall()
