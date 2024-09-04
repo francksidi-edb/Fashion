@@ -18,9 +18,9 @@ into a folder like following `dataset/images`
 
 Postgresql 16 installed.
 
-#### If aidb will be used;
+#### If aidb extension will be used;
 
-aidb extension is installed. If not installed please install it by following the step by step installation guide: https://www.enterprisedb.com/docs/edb-postgres-ai/ai-ml/install-tech-preview/
+aidb is EDB Postgres AI database extension and it should be installed. If not installed please install it by following the step by step installation guide in the following link: https://www.enterprisedb.com/docs/edb-postgres-ai/ai-ml/install-tech-preview/
 
 #### If aidb won't be used but pgvector and PL/Python will be used;
 
@@ -44,21 +44,34 @@ Python Environment: The Python environment accessible to PostgreSQL should have 
 
 ## Run
 ### Run with aidb extension
-Initially run connect_encode.py file to install aidb extension, create and refresh retriever to collect and generate embeddings from image datas in an S3 bucket.
-The images should be stored into that S3 bucket to run the python script. Then you should pass the name of the S3 bucket name as an argument like in below;
+You can run aidb recommendation app in two ways.
+First you can run as a full streamlit app from initializing the db to running the search. Every operation is behind the UI;
 
 ```
-%python code/connect_encode.py s3-bucket-name
+%streamlit run code/app.py
+```
+
+Second, you can first run the python script to initialize the database and to load the data. Then initially run `connect_encode.py` file to install aidb extension as shown in below, create and refresh retriever to collect and generate embeddings from image datas in an S3 bucket.
+The images should be stored into that S3 bucket to run the python script. S3 endpoint is optional leave blank if the s3 bucket is not public. Then you should pass the name of the S3 bucket name as an argument like in below;
+
+```
+%python code/connect_encode.py retriver_name s3_bucket_name s3_endpoint
 ```
 
 ### Similarity Search using Streamlit application Catalog Search and Free Text Search on Catalog. 
 
 Change the db connection with the necessary port, username, password from `create_db_connection` function and `DATABASE_URL` variable. 
 
-To run with aidb use the below code
+To run with aidb use the below code. s3_endpoint is optional Streamlit doesn't natively support command-line arguments in the same way as typical Python scripts. Therefore enter single quoted empty string '' if the s3 bucket is not public.
 ```
-%streamlit run code/app_search_aidb.py
+% streamlit run code/app_search_aidb.py retriever_name s3_bucket_name s3_endpoint
 ```
+
+Example if the S3 bucket is not public and I added AWS Secret and AWS Access key initially as environment variables; 
+```
+% streamlit run code/app_search_aidb.py recommendation_engine bilge-ince-test ''
+```
+
 Example search texts : red shoes, red women shoes, black shoes....
 
 ### Run without aidb (pgvector and PL/Python only)
