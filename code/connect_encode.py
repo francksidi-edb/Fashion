@@ -33,19 +33,20 @@ def initialize_database(conn):
             );
         """)
 
-def create_and_refresh_retriever(conn, s3_bucket_name):
+def create_and_refresh_retriever(conn, retriever_name, s3_bucket_name, s3_endpoint):
     """Create and refresh the S3 retriever."""
     
     with conn.cursor() as cur:
         start_time = time.time()
         cur.execute(f"""
             SELECT aidb.create_s3_retriever(
-                'img_embeddings',
+                '{retriever_name}',
                 'public', 
                 'clip-vit-base-patch32',
                 'img',
                 '{s3_bucket_name}',
-                ''
+                '',
+                '{s3_endpoint}'
             );
         """)
         cur.execute("SELECT aidb.refresh_retriever('img_embeddings');")
@@ -63,7 +64,9 @@ def load_data_to_db(conn, file_path):
 
 def main():
         parser = argparse.ArgumentParser()
+        parser.add_argument("retriever_name", help="enter your retriever name", type=str)
         parser.add_argument("s3_bucket_name", help="enter your s3 bucket name", type=str)
+        parser.add_argument("--s3_endpoint", help="enter your s3 endpoint leave blank if your bucket is not public", type=str, default='')
         args = parser.parse_args()
 
         try:
@@ -71,8 +74,8 @@ def main():
                 conn.autocommit = True  # Enable autocommit for creating the database
                 start_time = time.time()
                 initialize_database(conn)
-                create_and_refresh_retriever(conn, args.s3_bucket_name)
-                load_data_to_db(conn, 'dataset/stylesc.csv')
+                create_and_refresh_retriever(conn, args.retriever_name, args.s3_bucket_name, args.s3_endpoint)
+                # load_data_to_db(conn, 'dataset/stylesc.csv')
                 vector_time = time.time() - start_time
                 print(f"Total process time: {vector_time:.4f} seconds.")
         except (Exception, psycopg2.DatabaseError) as error:
