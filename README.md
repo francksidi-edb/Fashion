@@ -1,6 +1,18 @@
-# Recommendation Engine
+# Recommender Pattern Dmo
 
-The primary objectives of this recommendation engine are twofold. Firstly, it aims to develop an experimental recommendation engine utilizing the `pgvector` extension and `PL/Python`. Secondly, it seeks to construct the same engine using the `aidb` extension, with the intent of demonstrating the extension's ease of implementation and its capability to abstract complexities without compromising functionality.
+This is a demo app showing how you can implement the "recommender pattern" using AIDB.
+
+The recommender pattern works as follows:
+- a PG table contains entries of e.g. products
+- we compute vector embeddings for each of them
+- we store those vector embeddings separately
+- users run a query; something they want a recommendation for
+- we compute an embedding for the query
+- compare the query embedding to the stored vectors
+- find appropriate responses
+
+
+
 
 ## Catalog Using Postgresql &amp; PGvector
 
